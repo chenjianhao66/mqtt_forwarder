@@ -71,6 +71,7 @@ func (m MqttStore) put(item *MqttItem) error {
 
 	opts.OnConnect = func(client mqtt.Client) {
 		log.Printf("[MQTT客户端] %s, %s 已连接", key, item.Name)
+		item.Enable = true
 	}
 	opts.OnConnectionLost = func(client mqtt.Client, err error) {
 		log.Printf("[MQTT客户端] %s, %s 连接丢失", key, item.Name)
@@ -198,7 +199,7 @@ type Response struct {
 
 func Success(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
-		"code": 0,
+		"code": http.StatusOK,
 		"msg":  "success",
 	})
 }
@@ -206,7 +207,7 @@ func Success(ctx *gin.Context) {
 func SuccessWithData(ctx *gin.Context, data any) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
-		"msg":  "success",
+		"msg":  "操作成功",
 		"data": data,
 	})
 }
@@ -214,7 +215,7 @@ func SuccessWithData(ctx *gin.Context, data any) {
 func Fail(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": http.StatusInternalServerError,
-		"msg":  "fail",
+		"msg":  "操作失败",
 	})
 }
 
