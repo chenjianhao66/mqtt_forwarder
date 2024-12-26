@@ -2,11 +2,14 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 	"log"
-	"net/http"
 )
 
-var mqttStore = MqttStore{}
+var (
+	mqttStore      = MqttStore{}
+	forwarderStore = ForwarderStore{}
+)
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
@@ -25,6 +28,8 @@ func main() {
 		forwarderGroup.POST("/add", AddForwarder)
 		forwarderGroup.DELETE("/delete", DeleteForwarder)
 		forwarderGroup.GET("/list", ListForwarder)
+		forwarderGroup.POST("/enable/:id", EnableForwarder)
+		forwarderGroup.POST("/disable/:id", DisableForwarder)
 	}
 	engine.Run(":8888")
 }
@@ -33,48 +38,106 @@ func AddMqttClient(ctx *gin.Context) {
 	item := new(MqttItem)
 	if err := ctx.ShouldBindJSON(item); err != nil {
 		log.Println("[添加MQTT客户端] err: ", err)
-		ctx.String(http.StatusInternalServerError, "添加错误")
+		Fail(ctx)
 		return
 	}
 	log.Printf("[添加Mqtt客户端] addr: %s, port: %d, name: %s\n", item.Addr, item.Port, item.Name)
-	if mqttStore.contains(item) {
-		ctx.String(http.StatusInternalServerError, "该mqtt客户端已经存在，唯一表示是地址和端口的组合")
+	if mqttStore.contains(item.Addr, item.Port) {
+		FailWithMsg(ctx, "该mqtt客户端已经存在，唯一表示是地址和端口的组合")
 		return
 	}
 
 	if err := mqttStore.put(item); err != nil {
-		ctx.String(http.StatusInternalServerError, "添加失败")
+		FailWithMsg(ctx, "添加失败")
 		return
 	}
-	ctx.String(http.StatusOK, "添加成功")
+	Success(ctx)
 }
 
 func DeleteMqttClient(ctx *gin.Context) {
 	req := new(DeleteMqttItemReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		log.Println("[删除MQTT客户端] 绑定结构体失败，err: ", err)
-		ctx.String(http.StatusInternalServerError, "删除错误,绑定结构体失败.")
+		FailWithMsg(ctx, "删除错误,绑定结构体失败.")
 		return
 	}
 
 	log.Printf("[删除Mqtt客户端] addr: %s, port: %d\n", req.Addr, req.Port)
 	mqttStore.del(req.Addr, req.Port)
-	ctx.String(http.StatusOK, "删除成功")
+	Success(ctx)
 }
 
 func ListMqttClient(ctx *gin.Context) {
 	mqttItems := mqttStore.values()
-	ctx.JSON(http.StatusOK, mqttItems)
+	SuccessWithData(ctx, mqttItems)
 }
 
 func AddForwarder(ctx *gin.Context) {
+	req := new(MqttForwarderItem)
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		log.Println("[添加转发器] 绑定结构体失败，err: ", err)
+		FailWithMsg(ctx, "添加转发器错误,绑定结构体失败.")
+		return
+	}
+	if !mqttStore.contains(req.SourceItemAddr, req.SourceItemPort) {
+		log.Println("[添加转发器] 源客户端不存在，请先添加源客户端")
+		FailWithMsg(ctx, "添加转发器错误,源客户端不存在.")
+		return
+	}
+	if !mqttStore.contains(req.TargetItemAddr, req.TargetItemPort) {
+		log.Println("[添加转发器] 目标客户端不存在，请先添加目标客户端")
+		FailWithMsg(ctx, "添加转发器错误,目标客户端不存在.")
+		return
+	}
 
+	if err := forwarderStore.add(req); err != nil {
+		log.Println("[添加转发器] 添加转发器失败，err: ", err)
+		FailWithMsg(ctx, "添加转发器错误,添加转发器失败.")
+		return
+	}
+
+	Success(ctx)
 }
 
 func DeleteForwarder(ctx *gin.Context) {
+	req := new(MqttForwarderItem)
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		log.Println("[删除转发器] 绑定结构体失败，err: ", err)
+		FailWithMsg(ctx, "删除转发器错误,绑定结构体失败.")
+		return
+	}
 
+	if err := forwarderStore.del(req); err != nil {
+		log.Println("[删除转发器] 删除转发器失败，err: ", err)
+		FailWithMsg(ctx, "删除转发器错误,删除转发器失败.")
+		return
+	}
+	Success(ctx)
 }
 
 func ListForwarder(ctx *gin.Context) {
+	values := forwarderStore.values()
+	SuccessWithData(ctx, values)
+}
 
+func EnableForwarder(ctx *gin.Context) {
+	id := cast.ToInt(ctx.Param("id"))
+
+	if err := forwarderStore.switchStatus(id, true); err != nil {
+		log.Println(err)
+		FailWithMsg(ctx, "启用转发器失败")
+	}
+
+	Success(ctx)
+}
+
+func DisableForwarder(ctx *gin.Context) {
+	id := cast.ToInt(ctx.Param("id"))
+
+	if err := forwarderStore.switchStatus(id, false); err != nil {
+		log.Println(err)
+		FailWithMsg(ctx, "关闭转发器失败")
+	}
+
+	Success(ctx)
 }
