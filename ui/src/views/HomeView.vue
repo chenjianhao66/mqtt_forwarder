@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from "vue";
-import axios from "axios"
-import {queryMqttClientList,saveMqttClient,delMqttClient} from "@/api/mqtt";
+import {queryMqttClientList,saveMqttClient,delMqttClient} from "../api/mqtt";
 
 
 onMounted(() => {
