@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import {onMounted, reactive, ref} from "vue";
 import {queryMqttClientList,saveMqttClient,delMqttClient} from "../api/mqtt";
 
@@ -17,7 +17,7 @@ const getMqttClient = async () => {
 }
 
 
-const handleDelete = async (index: number, row: any) => {
+const handleDelete = async (index, row) => {
   console.log(index, row)
   const param = {
     addr: row.addr,

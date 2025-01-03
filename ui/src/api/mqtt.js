@@ -43,3 +43,22 @@ export const enableForwarder = id => {
 export const disableForwarder = id => {
     return request.post({ url: `/mqtt/forwarder/disable/${id}` });
 }
+
+// ====================
+// 获取聚英继电器
+export const connectRelay = data => {
+    return request.post({url: '/mqtt/relay/connect', data});
+}
+
+export const disconnectRelay = data => {
+    return request.post({url: '/mqtt/relay/disconnect', data});
+}
+
+
+export const switchStatus = data => {
+    return request.post({url: '/mqtt/relay/command', data});
+}
+
+export const listRelay = params => {
+    return request.get({ url: '/mqtt/relay/list', params});
+}

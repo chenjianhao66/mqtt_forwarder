@@ -31,6 +31,15 @@ func main() {
 		forwarderGroup.POST("/enable/:id", EnableForwarder)
 		forwarderGroup.POST("/disable/:id", DisableForwarder)
 	}
+
+	relayGroup := engine.Group("/mqtt/relay")
+	{
+		relayGroup.POST("/connect", Connect)
+		relayGroup.GET("/list", ListRelay)
+		relayGroup.POST("/command", SwitchRelayPointStatus)
+		relayGroup.POST("/disconnect", Disconnect)
+		relayGroup.POST("/status", RelayStatusSSE)
+	}
 	engine.Run(":8888")
 }
 

@@ -13,6 +13,7 @@ import HelloWorld from './components/HelloWorld.vue'
       <nav>
         <RouterLink to="/">MQTT 客户端</RouterLink>
         <RouterLink to="/about">消息转发器</RouterLink>
+        <RouterLink to="/relay">聚英</RouterLink>
       </nav>
     </div>
   </header>
