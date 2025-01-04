@@ -56,8 +56,8 @@ func (c *ConnectParams) DOPointStatus() string {
 }
 
 type Point struct {
-	Name   string
-	Status bool
+	Name   string `json:"name"`
+	Status bool   `json:"status"`
 }
 
 func (c *ConnectParams) Key() string {
@@ -124,6 +124,7 @@ func SwitchRelayPointStatus(ctx *gin.Context) {
 	}
 
 	params := relayStore[fmt.Sprintf("%s:%d", c.Addr, c.Port)]
+	log.Printf("要发送的聚英：%s, DO%d, 要切换的状态：%t", params.Key(), c.PointNumber, c.Status)
 	sendSwitchCommand(params, c.PointNumber-1, c.Status)
 	SuccessWithData(ctx, params)
 }
@@ -231,51 +232,56 @@ func receive(param *ConnectParams) {
 
 	reader := bufio.NewReader(param.conn)
 	for {
-		b := make([]byte, 1024)
-		n, err := reader.Read(b)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				log.Println("读取聚英消息：读取到EOF.")
+		select {
+		case <-param.ctx.Done():
+			return
+		default:
+			b := make([]byte, 1024)
+			n, err := reader.Read(b)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					log.Println("读取聚英消息：读取到EOF.")
+					break
+				}
+				log.Println("读取聚英消息失败，err: ", err)
 				break
 			}
-			log.Println("读取聚英消息失败，err: ", err)
-			break
-		}
-		if n == 0 {
-			//log.Printf("读取聚英[%s]消息，长度为0， 跳过.", param.Key())
-			continue
-		}
-		message := b[:n]
-		if len(message) < 4 {
-			log.Println("读取聚电消息失败，消息长度小于4")
-			continue
-		}
-		command := int(message[1])
+			if n == 0 {
+				//log.Printf("读取聚英[%s]消息，长度为0， 跳过.", param.Key())
+				continue
+			}
+			message := b[:n]
+			if len(message) < 4 {
+				log.Println("读取聚电消息失败，消息长度小于4")
+				continue
+			}
+			command := int(message[1])
 
-		switch command {
-		case DO:
-			param.DO1.Status = (message[3] & 0x01) != 0
-			param.DO2.Status = (message[3] & 0x02) != 0
-			param.DO3.Status = (message[3] & 0x04) != 0
-			param.DO4.Status = (message[3] & 0x08) != 0
-			param.DO5.Status = (message[3] & 0x10) != 0
-			param.DO6.Status = (message[3] & 0x20) != 0
-			param.DO7.Status = (message[3] & 0x40) != 0
-			param.DO8.Status = (message[3] & 0x80) != 0
-			//log.Printf("接收到聚英[%s]的DO口查询消息回复: [%d]. \n %s", param.Key(), message[3], param.DOPointStatus())
-			//log.Printf("%#x", message)
-		case DI:
-			param.DI1.Status = (message[3] & 0x01) != 0
-			param.DI2.Status = (message[3] & 0x02) != 0
-			param.DI3.Status = (message[3] & 0x04) != 0
-			param.DI4.Status = (message[3] & 0x08) != 0
-			param.DI5.Status = (message[3] & 0x10) != 0
-			param.DI6.Status = (message[3] & 0x20) != 0
-			param.DI7.Status = (message[3] & 0x40) != 0
-			param.DI8.Status = (message[3] & 0x80) != 0
-			//log.Printf("接收到聚英[%s]的DI口查询消息回复. \n %s", param.Key(), param.DIPointStatus())
-		default:
-			log.Printf("收到无效的聚英[%s]回复消息, command: %d", param.Key(), command)
+			switch command {
+			case DO:
+				param.DO1.Status = (message[3] & 0x01) != 0
+				param.DO2.Status = (message[3] & 0x02) != 0
+				param.DO3.Status = (message[3] & 0x04) != 0
+				param.DO4.Status = (message[3] & 0x08) != 0
+				param.DO5.Status = (message[3] & 0x10) != 0
+				param.DO6.Status = (message[3] & 0x20) != 0
+				param.DO7.Status = (message[3] & 0x40) != 0
+				param.DO8.Status = (message[3] & 0x80) != 0
+				//log.Printf("接收到聚英[%s]的DO口查询消息回复: [%d]. \n %s", param.Key(), message[3], param.DOPointStatus())
+				//log.Printf("%#x", message)
+			case DI:
+				param.DI1.Status = (message[3] & 0x01) != 0
+				param.DI2.Status = (message[3] & 0x02) != 0
+				param.DI3.Status = (message[3] & 0x04) != 0
+				param.DI4.Status = (message[3] & 0x08) != 0
+				param.DI5.Status = (message[3] & 0x10) != 0
+				param.DI6.Status = (message[3] & 0x20) != 0
+				param.DI7.Status = (message[3] & 0x40) != 0
+				param.DI8.Status = (message[3] & 0x80) != 0
+				//log.Printf("接收到聚英[%s]的DI口查询消息回复. \n %s", param.Key(), param.DIPointStatus())
+			default:
+				log.Printf("收到无效的聚英[%s]回复消息, command: %d", param.Key(), command)
+			}
 		}
 	}
 
@@ -316,7 +322,7 @@ func sendCommand(param *ConnectParams, command []byte) {
 		log.Printf("发送聚英[%s] 消息失败，发送长度和消息长度不一致", param.Key())
 		return
 	}
-	//log.Printf("发送聚英[%s] 消息成功", param.Key())
+	log.Printf("发送聚英[%s] 消息成功", param.Key())
 }
 
 func getCRC16(command []byte) int {

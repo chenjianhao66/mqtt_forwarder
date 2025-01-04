@@ -1,6 +1,6 @@
 <script setup>
 import {onMounted, reactive, ref} from "vue";
-import {queryMqttClientList,saveMqttClient,delMqttClient} from "../api/mqtt";
+import {queryMqttClientList,saveMqttClient,delMqttClient} from "@/api/mqtt";
 
 
 onMounted(() => {

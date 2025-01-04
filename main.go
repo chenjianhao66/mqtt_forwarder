@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"log"
+	"mqtt_forwarder/ui"
 )
 
 var (
@@ -40,6 +41,7 @@ func main() {
 		relayGroup.POST("/disconnect", Disconnect)
 		relayGroup.POST("/status", RelayStatusSSE)
 	}
+	ui.RegisterRoutes(engine)
 	engine.Run(":8888")
 }
 
