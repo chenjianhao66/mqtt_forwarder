@@ -62,3 +62,7 @@ export const switchStatus = data => {
 export const listRelay = params => {
     return request.get({ url: '/mqtt/relay/list', params});
 }
+
+export const relayStatus = params => {
+    return request.get({ url: '/mqtt/relay/status', params});
+}

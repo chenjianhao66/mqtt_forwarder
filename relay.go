@@ -149,29 +149,26 @@ func Disconnect(ctx *gin.Context) {
 }
 
 func RelayStatusSSE(ctx *gin.Context) {
-	command := new(Command)
-	if err := ctx.ShouldBindJSON(command); err != nil {
-		log.Println("[获取继电器状态失败] err: ", err)
-		FailWithMsg(ctx, "参数错误")
-		return
-	}
-	key := fmt.Sprintf("%s:%d", command.Addr, command.Port)
+	addr := ctx.Query("addr")
+	port := ctx.Query("port")
+	key := fmt.Sprintf("%s:%s", addr, port)
 	if !relayStore.contains(key) {
 		FailWithMsg(ctx, "对应的聚英不存在")
 		return
 	}
 
+	log.Println("sse连接成功，定义定时器，每秒发送数据")
 	// 设置响应头
 	ctx.Header("Content-Type", "text/event-stream")
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("Connection", "keep-alive")
+	ctx.Header("Access-Control-Allow-Origin", "*")
 
 	c := ctx.Request.Context()
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer func() {
 		ticker.Stop()
 	}()
-
 	for {
 		select {
 		case <-c.Done():
@@ -181,7 +178,6 @@ func RelayStatusSSE(ctx *gin.Context) {
 			params := relayStore[key]
 			ctx.SSEvent("message", params)
 			ctx.Writer.Flush()
-			log.Println("sse flush.")
 		}
 	}
 

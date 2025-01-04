@@ -39,7 +39,7 @@ func main() {
 		relayGroup.GET("/list", ListRelay)
 		relayGroup.POST("/command", SwitchRelayPointStatus)
 		relayGroup.POST("/disconnect", Disconnect)
-		relayGroup.POST("/status", RelayStatusSSE)
+		relayGroup.GET("/status", RelayStatusSSE)
 	}
 	ui.RegisterRoutes(engine)
 	engine.Run(":8888")
