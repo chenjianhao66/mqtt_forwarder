@@ -1,16 +1,22 @@
 package main
 
 import (
+	"embed"
+	"fmt"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"log"
-	"mqtt_forwarder/ui"
+	"net/http"
 )
 
 var (
 	mqttStore      = MqttStore{}
 	forwarderStore = ForwarderStore{}
 )
+
+//go:embed ui/dist/*
+var staticFiles embed.FS
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
@@ -41,7 +47,12 @@ func main() {
 		relayGroup.POST("/disconnect", Disconnect)
 		relayGroup.GET("/status", RelayStatusSSE)
 	}
-	ui.RegisterRoutes(engine)
+
+	engine.Use(static.Serve("/", static.EmbedFolder(staticFiles, "ui/dist")))
+	engine.NoRoute(func(context *gin.Context) {
+		fmt.Printf("%s doesn't exists, redirect on /\n", context.Request.URL.Path)
+		context.Redirect(http.StatusMovedPermanently, "/")
+	})
 	engine.Run(":8888")
 }
 
