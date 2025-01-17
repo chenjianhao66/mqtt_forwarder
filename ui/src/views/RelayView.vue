@@ -44,8 +44,8 @@ import {connectRelay, disconnectRelay, switchStatus, listRelay, relayStatus} fro
 
 const dialogRelayVisible = ref(false)
 const relay = reactive({
-  addr: '192.168.99.113',
-  port: '10000',
+  addr: '',
+  port: '',
 })
 
 const connectStatus = ref(false)
@@ -122,6 +122,15 @@ const receiveSseData = (data) => {
   data.DO6 && (doProps.value[5] = data.DO6)
   data.DO7 && (doProps.value[6] = data.DO7)
   data.DO8 && (doProps.value[7] = data.DO8)
+
+  data.DI1 && (diProps.value[0] = data.DI1)
+  data.DI2 && (diProps.value[1] = data.DI2)
+  data.DI3 && (diProps.value[2] = data.DI3)
+  data.DI4 && (diProps.value[3] = data.DI4)
+  data.DI5 && (diProps.value[4] = data.DI5)
+  data.DI6 && (diProps.value[5] = data.DI6)
+  data.DI7 && (diProps.value[6] = data.DI7)
+  data.DI8 && (diProps.value[7] = data.DI8)
 }
 
 onUnmounted(() => {
